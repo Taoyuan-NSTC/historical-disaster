@@ -8,7 +8,6 @@
         <link rel="stylesheet" href="css/L.Control.Layers.Tree.css">
         <link rel="stylesheet" href="css/qgis2web.css">
         <link rel="stylesheet" href="css/fontawesome-all.min.css">
-        <link rel="stylesheet" href="css/leaflet-search.css">
         <link rel="stylesheet" href="css/filter.css">
         <link rel="stylesheet" href="css/nouislider.min.css">
         <link rel="stylesheet" href="css/leaflet-measure.css">
@@ -29,27 +28,27 @@
             #count-num { font-size: 1.5em; color: #e74c3c; font-weight: bold; }
 
             /* 中間地圖 */
-            #map { flex: 1; z-index: 1; }
+            #map { flex: 1; z-index: 1; position: relative; }
 
             /* 右側詳情 */
             #right-sidebar { width: 320px; background: white; border-left: 1px solid #ccc; overflow-y: auto; }
             .detail-header { background: #e74c3c; color: white; padding: 10px; font-weight: bold; }
-            #detail-content { padding: 15px; font-size: 0.9em; line-height: 1.6; }
+            #detail-content { padding: 15px; font-size: 0.85em; line-height: 1.6; }
 
-            /* 隱藏原本 qgis2web 生成的舊選單 */
+            /* 隱藏原始 qgis2web 產出的舊介面 */
             #all, #menu { display: none !important; }
         </style>
-        <title>桃園市災害清冊儀表板</title>
+        <title>桃園市歷史災害儀表板</title>
     </head>
     <body>
-        <div id="header">桃園市災害清冊儀表板</div>
+        <div id="header">桃園市災害情冊儀表板</div>
         
         <div id="main-container">
             <aside id="left-sidebar">
                 <div class="sidebar-header">災害事件列表</div>
                 <div id="event-list">載入資料中...</div>
                 <div id="total-panel">
-                    <small>總計</small>
+                    <small>總計筆數</small>
                     <div><span id="count-num">0</span> 筆</div>
                 </div>
             </aside>
@@ -69,100 +68,104 @@
         <script src="js/rbush.min.js"></script>
         <script src="js/labelgun.min.js"></script>
         <script src="js/labels.js"></script>
-        <script src="js/leaflet-measure.js"></script>
-        <script src="js/leaflet-search.js"></script>
-        <script src="js/nouislider.min.js"></script>
-        <script src="js/wNumb.js"></script>
         <script src="data/114___1.js"></script>
         <script src="data/__2.js"></script>
 
-        <script src="js/leaflet.js"></script>
-        <script src="data/114___1.js"></script>
-        <script src="data/__2.js"></script>
-
-    <script>
-        // 2. 使用 window.onload 確保所有資料檔案（包括 __2.js）都讀取完畢才執行
-        window.onload = function() {
-        
-            // 檢查資料是否成功載入
-            if (typeof json___2 === 'undefined') {
-                console.error("錯誤：找不到 json___2 資料，請檢查 data/__2.js 內的變數名稱。");
-                document.getElementById('event-list').innerHTML = "資料載入失敗，請檢查檔案內容。";
-            return;
-            }
-
-            // 初始化地圖
-            var map = L.map('map', {
-                zoomControl: true, maxZoom: 28, minZoom: 1
-            }).fitBounds([[24.6081917, 120.938447], [25.1121815, 121.744594]]);
-
-            // 設定 Pane
-            map.createPane('pane_114___1');
-            map.getPane('pane_114___1').style.zIndex = 401;
-            map.createPane('pane___2');
-            map.getPane('pane___2').style.zIndex = 402;
-
-            L.tileLayer('https://mt1.google.com/vt/lyrs=r&x={x}&y={y}&z={z}').addTo(map);
-
-            // 載入行政區邊界
-            var layer_114___1 = L.geoJson(json_114___1, {
-                pane: 'pane_114___1',
-                style: { color: 'black', weight: 1, fillOpacity: 0 },
-                interactive: false
-            }).addTo(map);
-
-            // 載入災害點位
-            var layer___2 = L.geoJson(json___2, {
-                pane: 'pane___2',
-                pointToLayer: function (feature, latlng) {
-                    var colors = {'水災': '#1f94f4', '坡災': '#23db66', '風災': '#e6211d', '震災': '#ffad00', '雷擊': '#ff9afe'};
-                    return L.circleMarker(latlng, {
-                        radius: 6.0, color: 'white', weight: 1.5, fillOpacity: 1,
-                        fillColor: colors[feature.properties['災害類別']] || '#999'
-                    });
-                },
-                onEachFeature: function(feature, layer) {
-                    layer.on('click', function() { showDetail(feature.properties); });
+        <script>
+            // 等待頁面與資料載入
+            window.onload = function() {
+                if (typeof json___2 === 'undefined') {
+                    document.getElementById('event-list').innerHTML = "錯誤: 無法讀取 json___2 資料。";
+                    return;
                 }
-            }).addTo(map);
 
-            // 更新清單與筆數
-            function updateDashboard() {
-                var listContent = "";
-                var count = 0;
-                layer___2.eachLayer(function(l) {
-                    count++;
-                    var p = l.feature.properties;
-                    listContent += `<div class="event-item" onclick="zoomToLayer(${l._leaflet_id})">
-                        <div class="event-type">${p['災害類別']} - ${p['災害事件'] || '無事件名'}</div>
-                        <small>${p['災害區域']} | ${p['災害發生年(民國)']}年</small>
-                    </div>`;
-                });
-                document.getElementById('event-list').innerHTML = listContent;
-                document.getElementById('count-num').innerText = count;
-            }
+                // 初始化地圖
+                var map = L.map('map', {
+                    zoomControl: true, maxZoom: 28, minZoom: 1
+                }).fitBounds([[24.6081917, 120.938447], [25.1121815, 121.744594]]);
 
-            // 定義全域縮放函數
-            window.zoomToLayer = function(id) {
-                var l = layer___2.getLayer(id);
-                map.setView(l.getLatLng(), 16);
-                showDetail(l.feature.properties);
+                // 設定 Pane 確保疊放順序
+                map.createPane('pane_114___1');
+                map.getPane('pane_114___1').style.zIndex = 401;
+                map.createPane('pane___2');
+                map.getPane('pane___2').style.zIndex = 402;
+
+                // 載入 Google Maps 底圖
+                L.tileLayer('https://mt1.google.com/vt/lyrs=r&x={x}&y={y}&z={z}').addTo(map);
+
+                // 行政區背景
+                var layer_114___1 = L.geoJson(json_114___1, {
+                    pane: 'pane_114___1',
+                    style: { color: 'black', weight: 1, fillOpacity: 0.1, fillColor: '#fff' },
+                    interactive: false
+                }).addTo(map);
+
+                // 災害點位核心樣式
+                function getMarkerStyle(feature) {
+                    var colors = {'水災': '#1f94f4', '坡災': '#23db66', '風災': '#e6211d', '震災': '#ffad00', '雷擊': '#ff9afe'};
+                    return {
+                        pane: 'pane___2', radius: 6.0, color: 'white', weight: 1.5, fillOpacity: 1,
+                        fillColor: colors[feature.properties['災害類別']] || '#999'
+                    };
+                }
+
+                // 載入點位資料
+                var layer___2 = L.geoJson(json___2, {
+                    pane: 'pane___2',
+                    pointToLayer: function (feature, latlng) {
+                        return L.circleMarker(latlng, getMarkerStyle(feature));
+                    },
+                    onEachFeature: function(feature, layer) {
+                        layer.on('click', function() {
+                            showDetail(feature.properties);
+                        });
+                    }
+                }).addTo(map);
+
+                // 更新左側儀表板
+                function updateDashboard() {
+                    var listHtml = "";
+                    var count = 0;
+                    layer___2.eachLayer(function(l) {
+                        count++;
+                        var p = l.feature.properties;
+                        listHtml += `<div class="event-item" onclick="zoomToLayer(${l._leaflet_id})">
+                            <div class="event-type">${p['災害類別']} - ${p['災害事件'] || '未命名稱'}</div>
+                            <small>${p['災害區域']} | ${p['災害發生年(民國)']}年</small>
+                        </div>`;
+                    });
+                    document.getElementById('event-list').innerHTML = listHtml;
+                    document.getElementById('count-num').innerText = count;
+                }
+
+                // 點擊列表縮放功能
+                window.zoomToLayer = function(id) {
+                    var l = layer___2.getLayer(id);
+                    map.setView(l.getLatLng(), 16);
+                    showDetail(l.feature.properties);
+                    l.openPopup();
+                };
+
+                // 右側詳情面板
+                function showDetail(props) {
+                    var html = '<table style="width:100%; border-collapse:collapse;">';
+                    for (var key in props) {
+                        if(props[key] !== null) {
+                            html += `<tr style="border-bottom:1px solid #eee;">
+                                <td style="padding:8px; color:#666; width:110px;">${key}</td>
+                                <td style="padding:8px; font-weight:bold;">${props[key]}</td>
+                            </tr>`;
+                        }
+                    }
+                    document.getElementById('detail-content').innerHTML = html + '</table>';
+                }
+
+                // 初始呼叫
+                updateDashboard();
+                if (layer___2.getLayers().length > 0) {
+                    map.fitBounds(layer___2.getBounds());
+                }
             };
-
-            updateDashboard();
-            if (layer___2.getLayers().length > 0) map.fitBounds(layer___2.getBounds());
-        };
-
-        function showDetail(props) {
-            var html = '<table style="width:100%; border-collapse:collapse;">';
-            for (var key in props) {
-                html += `<tr style="border-bottom:1px solid #eee;">
-                    <td style="padding:8px; color:#666; font-size:12px;">${key}</td>
-                    <td style="padding:8px; font-weight:bold;">${props[key]}</td>
-                </tr>`;
-            }
-            document.getElementById('detail-content').innerHTML = html + '</table>';
-        }    
-    </script>        
+        </script>
     </body>
 </html>
