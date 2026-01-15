@@ -36,13 +36,13 @@
             .detail-header { background: #e74c3c; color: white; padding: 10px; font-weight: bold; }
             #detail-content { padding: 15px; font-size: 0.9em; line-height: 1.6; }
 
-            /* 隱藏原本 qgis2web 生成的 menu */
+            /* 隱藏原本 qgis2web 生成的舊選單 */
             #all, #menu { display: none !important; }
         </style>
         <title>桃園市歷史災害儀表板</title>
     </head>
     <body>
-        <div id="header">桃園市災害情冊儀表板</div>
+        <div id="header">桃園市災害清冊儀表板</div>
         
         <div id="main-container">
             <aside id="left-sidebar">
@@ -77,26 +77,43 @@
         <script src="data/__2.js"></script>
 
         <script>
-            // 初始化地圖 (保留你原本的設定)
+            // 1. 初始化地圖
             var map = L.map('map', {
                 zoomControl: true, maxZoom: 28, minZoom: 1
             }).fitBounds([[24.6081917, 120.938447], [25.1121815, 121.744594]]);
 
-            // 底圖
+            // 2. 設定 Pane (防止點位消失在底圖下)
+            map.createPane('pane_114___1');
+            map.getPane('pane_114___1').style.zIndex = 401;
+            map.createPane('pane___2');
+            map.getPane('pane___2').style.zIndex = 402;
+
+            // 3. 底圖載入
             var layer_GoogleMaps = L.tileLayer('https://mt1.google.com/vt/lyrs=r&x={x}&y={y}&z={z}', {
                 opacity: 1.0, attribution: ''
             }).addTo(map);
 
-            // 災害點位圖層樣式邏輯
+            // 4. 樣式定義 (114_鄉鎮市區)
+            function style_114___1_0() {
+                return { pane: 'pane_114___1', opacity: 1, color: 'rgba(0,0,0,1.0)', weight: 1.0, fill: true, fillOpacity: 0.1, fillColor: 'rgba(255,255,255,0)' };
+            }
+
+            // 5. 樣式定義 (災害點位)
             function style___2_0(feature) {
                 var colors = {'水災': '#1f94f4', '坡災': '#23db66', '風災': '#e6211d', '震災': '#ffad00', '雷擊': '#ff9afe'};
                 return {
-                    radius: 6.0, opacity: 1, color: 'white', weight: 1, fill: true,
+                    pane: 'pane___2', radius: 6.0, opacity: 1, color: 'white', weight: 1.5, fill: true,
                     fillOpacity: 1, fillColor: colors[feature.properties['災害類別']] || '#999', interactive: true
                 };
             }
 
-            // 建立圖層
+            // 6. 載入行政區邊界
+            var layer_114___1 = new L.geoJson(json_114___1, {
+                style: style_114___1_0,
+                interactive: false
+            }).addTo(map);
+
+            // 7. 載入災害點位
             var layer___2 = new L.geoJson(json___2, {
                 pointToLayer: function (feature, latlng) {
                     return L.circleMarker(latlng, style___2_0(feature));
@@ -108,7 +125,7 @@
                 }
             }).addTo(map);
 
-            // 更新儀表板功能
+            // 8. 儀表板更新邏輯 (側邊清單與筆數)
             function updateDashboard() {
                 var listContent = "";
                 var count = 0;
@@ -118,8 +135,8 @@
                     count++;
                     listContent += `
                         <div class="event-item" onclick="zoomTo(${layer._leaflet_id})">
-                            <div class="event-type">${props['災害類別']} - ${props['災害事件'] || '無事件名稱'}</div>
-                            <small>${props['災害區域']} | 民國 ${props['災害發生年(民國)']} 年</small>
+                            <div class="event-type">${props['災害類別']} - ${props['災害事件'] || '未具名事件'}</div>
+                            <small>${props['災害區域'] || '未定義區域'} | 民國 ${props['災害發生年(民國)']} 年</small>
                         </div>`;
                 });
 
@@ -127,31 +144,37 @@
                 document.getElementById('count-num').innerText = count;
             }
 
-            // 點擊列表定位
+            // 9. 點擊清單聯動功能
             window.zoomTo = function(id) {
                 var layer = layer___2.getLayer(id);
                 map.setView(layer.getLatLng(), 16);
                 showDetail(layer.feature.properties);
-                layer.openPopup();
+                // 模擬地圖點點擊效果
+                layer.openPopup(); 
             };
 
-            // 顯示右側詳細資訊
+            // 10. 詳情面板呈現
             function showDetail(props) {
                 var html = `<table style="width:100%; border-collapse:collapse;">`;
                 for (var key in props) {
                     html += `<tr style="border-bottom:1px solid #eee;">
-                                <td style="padding:8px; color:#666; width:100px;">${key}</td>
-                                <td style="padding:8px; font-weight:bold;">${props[key]}</td>
+                                <td style="padding:8px; color:#666; width:110px; font-size:0.85em;">${key}</td>
+                                <td style="padding:8px; font-weight:bold; color:#333;">${props[key]}</td>
                              </tr>`;
                 }
                 html += `</table>`;
                 document.getElementById('detail-content').innerHTML = html;
             }
 
-            // 初始執行
-            updateDashboard();
+            // 延遲執行確保資料已注入
+            setTimeout(function() {
+                updateDashboard();
+                if (layer___2.getLayers().length > 0) {
+                    map.fitBounds(layer___2.getBounds());
+                }
+            }, 500);
 
-            // 如果原本有篩選器邏輯，需在此處手動重新綁定 (此處先簡化為資料載入)
+            // 當圖層變動時自動更新統計
             map.on('overlayadd overlayremove', updateDashboard);
         </script>
     </body>
