@@ -76,106 +76,93 @@
         <script src="data/114___1.js"></script>
         <script src="data/__2.js"></script>
 
-        <script>
-            // 1. 初始化地圖
+        <script src="js/leaflet.js"></script>
+<script src="data/114___1.js"></script>
+<script src="data/__2.js"></script>
+
+    <script>
+        // 2. 使用 window.onload 確保所有資料檔案（包括 __2.js）都讀取完畢才執行
+        window.onload = function() {
+        
+            // 檢查資料是否成功載入
+            if (typeof json___2 === 'undefined') {
+                console.error("錯誤：找不到 json___2 資料，請檢查 data/__2.js 內的變數名稱。");
+                document.getElementById('event-list').innerHTML = "資料載入失敗，請檢查檔案內容。";
+            return;
+            }
+
+            // 初始化地圖
             var map = L.map('map', {
                 zoomControl: true, maxZoom: 28, minZoom: 1
             }).fitBounds([[24.6081917, 120.938447], [25.1121815, 121.744594]]);
 
-            // 2. 設定 Pane (防止點位消失在底圖下)
+            // 設定 Pane
             map.createPane('pane_114___1');
             map.getPane('pane_114___1').style.zIndex = 401;
             map.createPane('pane___2');
             map.getPane('pane___2').style.zIndex = 402;
 
-            // 3. 底圖載入
-            var layer_GoogleMaps = L.tileLayer('https://mt1.google.com/vt/lyrs=r&x={x}&y={y}&z={z}', {
-                opacity: 1.0, attribution: ''
-            }).addTo(map);
+            L.tileLayer('https://mt1.google.com/vt/lyrs=r&x={x}&y={y}&z={z}').addTo(map);
 
-            // 4. 樣式定義 (114_鄉鎮市區)
-            function style_114___1_0() {
-                return { pane: 'pane_114___1', opacity: 1, color: 'rgba(0,0,0,1.0)', weight: 1.0, fill: true, fillOpacity: 0.1, fillColor: 'rgba(255,255,255,0)' };
-            }
-
-            // 5. 樣式定義 (災害點位)
-            function style___2_0(feature) {
-                var colors = {'水災': '#1f94f4', '坡災': '#23db66', '風災': '#e6211d', '震災': '#ffad00', '雷擊': '#ff9afe'};
-                return {
-                    pane: 'pane___2', radius: 6.0, opacity: 1, color: 'white', weight: 1.5, fill: true,
-                    fillOpacity: 1, fillColor: colors[feature.properties['災害類別']] || '#999', interactive: true
-                };
-            }
-
-            // 6. 載入行政區邊界
-            var layer_114___1 = new L.geoJson(json_114___1, {
-                style: style_114___1_0,
+            // 載入行政區邊界
+            var layer_114___1 = L.geoJson(json_114___1, {
+                pane: 'pane_114___1',
+                style: { color: 'black', weight: 1, fillOpacity: 0 },
                 interactive: false
             }).addTo(map);
 
-            // 7. 載入災害點位
-            var layer___2 = new L.geoJson(json___2, {
+            // 載入災害點位
+            var layer___2 = L.geoJson(json___2, {
+                pane: 'pane___2',
                 pointToLayer: function (feature, latlng) {
-                    return L.circleMarker(latlng, style___2_0(feature));
+                    var colors = {'水災': '#1f94f4', '坡災': '#23db66', '風災': '#e6211d', '震災': '#ffad00', '雷擊': '#ff9afe'};
+                    return L.circleMarker(latlng, {
+                        radius: 6.0, color: 'white', weight: 1.5, fillOpacity: 1,
+                        fillColor: colors[feature.properties['災害類別']] || '#999'
+                    });
                 },
                 onEachFeature: function(feature, layer) {
-                    layer.on('click', function() {
-                        showDetail(feature.properties);
-                    });
+                    layer.on('click', function() { showDetail(feature.properties); });
                 }
             }).addTo(map);
 
-            // 8. 儀表板更新邏輯 (側邊清單與筆數)
+            // 更新清單與筆數
             function updateDashboard() {
                 var listContent = "";
                 var count = 0;
-
-                layer___2.eachLayer(function(layer) {
-                    var props = layer.feature.properties;
+                layer___2.eachLayer(function(l) {
                     count++;
-                    listContent += `
-                        <div class="event-item" onclick="zoomTo(${layer._leaflet_id})">
-                            <div class="event-type">${props['災害類別']} - ${props['災害事件'] || '未具名事件'}</div>
-                            <small>${props['災害區域'] || '未定義區域'} | 民國 ${props['災害發生年(民國)']} 年</small>
-                        </div>`;
+                    var p = l.feature.properties;
+                    listContent += `<div class="event-item" onclick="zoomToLayer(${l._leaflet_id})">
+                        <div class="event-type">${p['災害類別']} - ${p['災害事件'] || '無事件名'}</div>
+                        <small>${p['災害區域']} | ${p['災害發生年(民國)']}年</small>
+                    </div>`;
                 });
-
                 document.getElementById('event-list').innerHTML = listContent;
                 document.getElementById('count-num').innerText = count;
             }
 
-            // 9. 點擊清單聯動功能
-            window.zoomTo = function(id) {
-                var layer = layer___2.getLayer(id);
-                map.setView(layer.getLatLng(), 16);
-                showDetail(layer.feature.properties);
-                // 模擬地圖點點擊效果
-                layer.openPopup(); 
+            // 定義全域縮放函數
+            window.zoomToLayer = function(id) {
+                var l = layer___2.getLayer(id);
+                map.setView(l.getLatLng(), 16);
+                showDetail(l.feature.properties);
             };
 
-            // 10. 詳情面板呈現
-            function showDetail(props) {
-                var html = `<table style="width:100%; border-collapse:collapse;">`;
-                for (var key in props) {
-                    html += `<tr style="border-bottom:1px solid #eee;">
-                                <td style="padding:8px; color:#666; width:110px; font-size:0.85em;">${key}</td>
-                                <td style="padding:8px; font-weight:bold; color:#333;">${props[key]}</td>
-                             </tr>`;
-                }
-                html += `</table>`;
-                document.getElementById('detail-content').innerHTML = html;
+            updateDashboard();
+            if (layer___2.getLayers().length > 0) map.fitBounds(layer___2.getBounds());
+        };
+
+        function showDetail(props) {
+            var html = '<table style="width:100%; border-collapse:collapse;">';
+            for (var key in props) {
+                html += `<tr style="border-bottom:1px solid #eee;">
+                    <td style="padding:8px; color:#666; font-size:12px;">${key}</td>
+                    <td style="padding:8px; font-weight:bold;">${props[key]}</td>
+                </tr>`;
             }
-
-            // 延遲執行確保資料已注入
-            setTimeout(function() {
-                updateDashboard();
-                if (layer___2.getLayers().length > 0) {
-                    map.fitBounds(layer___2.getBounds());
-                }
-            }, 500);
-
-            // 當圖層變動時自動更新統計
-            map.on('overlayadd overlayremove', updateDashboard);
-        </script>
+            document.getElementById('detail-content').innerHTML = html + '</table>';
+        }    
+    </script>        
     </body>
 </html>
