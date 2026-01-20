@@ -44,6 +44,13 @@
             .detail-header { background: #e74c3c; color: white; padding: 10px; font-weight: bold; }
             #detail-content { padding: 15px; font-size: 0.85em; line-height: 1.6; }
 
+            /* 指北針樣式 */
+            .compass-control {
+                background: white; border: 2px solid rgba(0,0,0,0.2); border-radius: 4px;
+                padding: 5px; cursor: default;
+            }
+            .compass-control img { width: 40px; height: 40px; }
+
             /* 地圖圖例 */
             .map-legend { background: white; padding: 10px; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.2); line-height: 1.5; font-size: 12px; }
             .legend-item { display: flex; align-items: center; margin-bottom: 3px; }
@@ -56,7 +63,7 @@
     </head>
     <body>
         <header id="header">
-            <div>桃園市災害情冊儀表板</div>
+            <div>桃園市歷史災害儀表板</div>
             <div id="filter-bar">
                 <span>篩選條件：</span>
                 <select id="sel-year" onchange="applyFilters()">
@@ -197,7 +204,7 @@
                     var p = l.feature.properties;
                     listHtml += `
                         <div class="event-item" onclick="zoomToLayer(${l._leaflet_id})">
-                            <div class="event-type">${p['災害類別']} - ${p['災害事件'] || '未命名'}</div>
+                            <div class="event-type">${p['災害類別']} - ${p['災害事件'] || '無詳細資料'}</div>
                             <small>${p['災害區域'] || '未知區域'} | 民國 ${p['災害發生年(民國)']} 年</small>
                         </div>`;
                 });
