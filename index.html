@@ -222,16 +222,34 @@
 
             // 詳情面板渲染
             function showDetail(props) {
-                var h = '<table style="width:100%; border-collapse:collapse;">';
-                for (var k in props) {
-                    if(props[k] !== null && k !== 'TOWNID' && k !== 'TOWNCODE') {
-                        h += `<tr style="border-bottom:1px solid #eee;">
-                                <td style="padding:8px; color:#666; width:110px; font-size:0.85em;">${k}</td>
-                                <td style="padding:8px; font-weight:bold; color:#333;">${props[k]}</td>
-                             </tr>`;
+                // 定義您想要顯示的欄位名稱（必須與 SHP 屬性表欄位名稱完全一致）
+                var targetFields = [
+                    '災害區域', 
+                    '村里', 
+                    '災害類別', 
+                    '災害發生年(民國)', 
+                    '發生日期(民國)', 
+                    '災害情況說明'
+                ];
+
+                var html = `<table style="width:100%; border-collapse:collapse;">`;
+                // 遍歷指定的欄位
+                targetFields.forEach(function(key) {
+                    // 檢查資料中是否有該欄位，且內容不為空
+                    if (props.hasOwnProperty(key)) {
+                        var value = (props[key] !== null) ? props[key] : "無資料";
+                        html += `<tr style="border-bottom:1px solid #eee;">
+                                    <td style="padding:10px; color:#666; width:120px; font-size:0.9em; background:#fcfcfc;">${key}</td>
+                                    <td style="padding:10px; font-weight:bold; color:#333; font-size:0.95em;">${value}</td>
+                                 </tr>`;
                     }
-                }
-                document.getElementById('detail-content').innerHTML = h + '</table>';
+                });
+
+                html += `</table>`;
+                document.getElementById('detail-content').innerHTML = html;
+                
+                    
+            
             }
         </script>
     </body>
